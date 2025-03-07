@@ -23,6 +23,8 @@ use tracing_subscriber::{self};
 mod common;
 use common::counter;
 
+// 绑定地址
+// Bind address
 type C2SWriter = Arc<Mutex<io::WriteHalf<io::SimplexStream>>>;
 type SessionId = Arc<str>;
 
@@ -40,12 +42,16 @@ impl App {
         }
     }
     pub fn router(&self) -> Router {
+        // 定义路由
+        // Define routes
         Router::new()
             .route("/sse", get(sse_handler).post(post_event_handler))
             .with_state(self.clone())
     }
 }
 
+// 生成会话 ID
+// Generate session ID
 fn session_id() -> SessionId {
     let id = format!("{:016x}", rand::random::<u128>());
     Arc::from(id)
@@ -57,6 +63,8 @@ pub struct PostEventQuery {
     pub session_id: String,
 }
 
+// 处理 POST 事件
+// Handle POST event
 async fn post_event_handler(
     State(app): State<App>,
     Query(PostEventQuery { session_id }): Query<PostEventQuery>,
@@ -98,6 +106,8 @@ async fn post_event_handler(
     Ok(StatusCode::ACCEPTED)
 }
 
+// 处理 SSE
+// Handle SSE
 async fn sse_handler(State(app): State<App>) -> Sse<impl Stream<Item = Result<Event, io::Error>>> {
     // it's 4KB
     const BUFFER_SIZE: usize = 1 << 12;

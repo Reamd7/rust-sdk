@@ -3,7 +3,8 @@ members = [
     "crates/*",
     "examples/clients",
     "examples/servers",
-    "examples/macros"
+    "examples/macros",
+    "examples/mcp-proxy"
 ]
 resolver = "2"
 
@@ -12,7 +13,7 @@ mcp-core = { path = "./crates/mcp-core" }
 mcp-macros = { path = "./crates/mcp-macros" }
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 version = "1.0.7"
 authors = ["Block <ai-oss-tools@block.xyz>"]
 license = "MIT"

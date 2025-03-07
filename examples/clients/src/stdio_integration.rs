@@ -12,6 +12,7 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), ClientError> {
+    // 初始化日志
     // Initialize logging
     tracing_subscriber::fmt()
         .with_env_filter(
@@ -21,6 +22,7 @@ async fn main() -> Result<(), ClientError> {
         )
         .init();
 
+    // 创建传输
     // Create the transport
     let transport = StdioTransport::new(
         "cargo",
@@ -31,15 +33,19 @@ async fn main() -> Result<(), ClientError> {
         HashMap::new(),
     );
 
+    // 启动传输以获取句柄
     // Start the transport to get a handle
     let transport_handle = transport.start().await.unwrap();
 
+    // 创建带有超时中间件的服务
     // Create the service with timeout middleware
     let service = McpService::with_timeout(transport_handle, Duration::from_secs(10));
 
+    // 创建客户端
     // Create client
     let mut client = McpClient::new(service);
 
+    // 初始化
     // Initialize
     let server_info = client
         .initialize(
@@ -52,39 +58,50 @@ async fn main() -> Result<(), ClientError> {
         .await?;
     println!("Connected to server: {server_info:?}\n");
 
+    // 列出工具
     // List tools
     let tools = client.list_tools(None).await?;
     println!("Available tools: {tools:?}\n");
 
+    // 调用 'increment' 工具 3 次
     // Call tool 'increment' tool 3 times
     for _ in 0..3 {
         let increment_result = client.call_tool("increment", serde_json::json!({})).await?;
         println!("Tool result for 'increment': {increment_result:?}\n");
     }
 
+    // 调用 'get_value' 工具
     // Call tool 'get_value'
     let get_value_result = client.call_tool("get_value", serde_json::json!({})).await?;
     println!("Tool result for 'get_value': {get_value_result:?}\n");
 
+    // 调用 'decrement' 工具一次
     // Call tool 'decrement' once
     let decrement_result = client.call_tool("decrement", serde_json::json!({})).await?;
     println!("Tool result for 'decrement': {decrement_result:?}\n");
 
+    // 调用 'get_value' 工具
     // Call tool 'get_value'
     let get_value_result = client.call_tool("get_value", serde_json::json!({})).await?;
     println!("Tool result for 'get_value': {get_value_result:?}\n");
 
+    // 列出资源
     // List resources
     let resources = client.list_resources(None).await?;
     println!("Resources: {resources:?}\n");
 
+    // 读取资源
     // Read resource
     let resource = client.read_resource("memo://insights").await?;
     println!("Resource: {resource:?}\n");
 
+    // 列出提示
+    // List prompts
     let prompts = client.list_prompts(None).await?;
     println!("Prompts: {prompts:?}\n");
 
+    // 获取提示
+    // Get prompt
     let prompt = client
         .get_prompt(
             "example_prompt",

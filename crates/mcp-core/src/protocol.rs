@@ -1,14 +1,15 @@
-/// The protocol messages exchanged between client and server
+//! 客户端和服务器之间交换的协议消息
 use crate::{
-    content::Content,
-    prompt::{Prompt, PromptMessage},
-    resource::Resource,
-    resource::ResourceContents,
-    tool::Tool,
+    content::Content, // 引入 content 模块中的 Content 类型
+    prompt::{Prompt, PromptMessage}, // 引入 prompt 模块中的 Prompt 和 PromptMessage 类型
+    resource::Resource, // 引入 resource 模块中的 Resource 类型
+    resource::ResourceContents, // 引入 resource 模块中的 ResourceContents 类型
+    tool::Tool, // 引入 tool 模块中的 Tool 类型
 };
-use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde::{Deserialize, Serialize}; // 引入 serde 库，提供 Deserialize 和 Serialize trait，用于序列化和反序列化
+use serde_json::Value; // 引入 serde_json 库，提供 Value 类型，用于处理 JSON 值
 
+/// JSON-RPC 请求
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct JsonRpcRequest {
     pub jsonrpc: String,
@@ -19,6 +20,7 @@ pub struct JsonRpcRequest {
     pub params: Option<Value>,
 }
 
+/// JSON-RPC 响应
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct JsonRpcResponse {
     pub jsonrpc: String,
@@ -30,6 +32,7 @@ pub struct JsonRpcResponse {
     pub error: Option<ErrorData>,
 }
 
+/// JSON-RPC 通知
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct JsonRpcNotification {
     pub jsonrpc: String,
@@ -38,6 +41,7 @@ pub struct JsonRpcNotification {
     pub params: Option<Value>,
 }
 
+/// JSON-RPC 错误
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct JsonRpcError {
     pub jsonrpc: String,
@@ -46,6 +50,7 @@ pub struct JsonRpcError {
     pub error: ErrorData,
 }
 
+/// JSON-RPC 消息，可以是请求、响应、通知或错误
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(untagged, try_from = "JsonRpcRaw")]
 pub enum JsonRpcMessage {
@@ -126,6 +131,7 @@ impl TryFrom<JsonRpcRaw> for JsonRpcMessage {
 }
 
 // Standard JSON-RPC error codes
+// 标准 JSON-RPC 错误码
 pub const PARSE_ERROR: i32 = -32700;
 pub const INVALID_REQUEST: i32 = -32600;
 pub const METHOD_NOT_FOUND: i32 = -32601;
@@ -133,20 +139,25 @@ pub const INVALID_PARAMS: i32 = -32602;
 pub const INTERNAL_ERROR: i32 = -32603;
 
 /// Error information for JSON-RPC error responses.
+/// JSON-RPC 错误响应的错误信息
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ErrorData {
     /// The error type that occurred.
+    /// 发生的错误类型
     pub code: i32,
 
     /// A short description of the error. The message SHOULD be limited to a concise single sentence.
+    /// 错误的简短描述。消息应该限制为简洁的单句。
     pub message: String,
 
     /// Additional information about the error. The value of this member is defined by the
     /// sender (e.g. detailed error information, nested errors etc.).
+    /// 关于错误的附加信息。此成员的值由发送者定义（例如，详细的错误信息、嵌套的错误等）。
     #[serde(skip_serializing_if = "Option::is_none")]
     pub data: Option<Value>,
 }
 
+/// 初始化结果
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct InitializeResult {
@@ -157,12 +168,14 @@ pub struct InitializeResult {
     pub instructions: Option<String>,
 }
 
+/// 实现信息
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Implementation {
     pub name: String,
     pub version: String,
 }
 
+/// 服务器能力
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ServerCapabilities {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -174,12 +187,14 @@ pub struct ServerCapabilities {
     // Add other capabilities as needed
 }
 
+/// Prompts 能力
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PromptsCapability {
     pub list_changed: Option<bool>,
 }
 
+/// Resources 能力
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ResourcesCapability {
@@ -187,12 +202,14 @@ pub struct ResourcesCapability {
     pub list_changed: Option<bool>,
 }
 
+/// Tools 能力
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolsCapability {
     pub list_changed: Option<bool>,
 }
 
+/// 列出资源的结果
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ListResourcesResult {
@@ -201,11 +218,13 @@ pub struct ListResourcesResult {
     pub next_cursor: Option<String>,
 }
 
+/// 读取资源的结果
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ReadResourceResult {
     pub contents: Vec<ResourceContents>,
 }
 
+/// 列出工具的结果
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ListToolsResult {
@@ -214,6 +233,7 @@ pub struct ListToolsResult {
     pub next_cursor: Option<String>,
 }
 
+/// 调用工具的结果
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CallToolResult {
@@ -222,11 +242,13 @@ pub struct CallToolResult {
     pub is_error: Option<bool>,
 }
 
+/// 列出 Prompt 的结果
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ListPromptsResult {
     pub prompts: Vec<Prompt>,
 }
 
+/// 获取 Prompt 的结果
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct GetPromptResult {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -234,6 +256,7 @@ pub struct GetPromptResult {
     pub messages: Vec<PromptMessage>,
 }
 
+/// 空结果
 #[derive(Debug, Serialize, Deserialize)]
 pub struct EmptyResult {}
 

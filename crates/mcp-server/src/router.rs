@@ -4,7 +4,9 @@ use std::{
     task::{Context, Poll},
 };
 
-type PromptFuture = Pin<Box<dyn Future<Output = Result<String, PromptError>> + Send + 'static>>;
+// 定义 PromptFuture 类型，用于表示 Prompt 的 Future
+// type PromptFuture = Pin<Box<dyn Future<Output = Result<String, PromptError>> + Send + 'static>>;
+// type PromptFuture = impl Future<Output = Result<String, PromptError>> + Send;
 
 use mcp_core::{
     content::Content,
@@ -23,7 +25,7 @@ use tower_service::Service;
 
 use crate::{BoxError, RouterError};
 
-/// Builder for configuring and constructing capabilities
+/// CapabilitiesBuilder 结构体，用于配置和构建 capabilities
 pub struct CapabilitiesBuilder {
     tools: Option<ToolsCapability>,
     prompts: Option<PromptsCapability>,
@@ -37,6 +39,7 @@ impl Default for CapabilitiesBuilder {
 }
 
 impl CapabilitiesBuilder {
+    // 创建一个新的 CapabilitiesBuilder 实例
     pub fn new() -> Self {
         Self {
             tools: None,
@@ -45,7 +48,7 @@ impl CapabilitiesBuilder {
         }
     }
 
-    /// Add multiple tools to the router
+    /// 为路由器添加多个工具
     pub fn with_tools(mut self, list_changed: bool) -> Self {
         self.tools = Some(ToolsCapability {
             list_changed: Some(list_changed),
@@ -53,7 +56,7 @@ impl CapabilitiesBuilder {
         self
     }
 
-    /// Enable prompts capability
+    /// 启用 prompts capability
     pub fn with_prompts(mut self, list_changed: bool) -> Self {
         self.prompts = Some(PromptsCapability {
             list_changed: Some(list_changed),
@@ -61,7 +64,7 @@ impl CapabilitiesBuilder {
         self
     }
 
-    /// Enable resources capability
+    /// 启用 resources capability
     pub fn with_resources(mut self, subscribe: bool, list_changed: bool) -> Self {
         self.resources = Some(ResourcesCapability {
             subscribe: Some(subscribe),
@@ -70,7 +73,7 @@ impl CapabilitiesBuilder {
         self
     }
 
-    /// Build the router with automatic capability inference
+    /// 使用自动 capability 推断构建路由器
     pub fn build(self) -> ServerCapabilities {
         // Create capabilities based on what's configured
         ServerCapabilities {
@@ -81,24 +84,35 @@ impl CapabilitiesBuilder {
     }
 }
 
+// 定义 Router trait
 pub trait Router: Send + Sync + 'static {
+    // 获取路由器的名称
     fn name(&self) -> String;
-    // in the protocol, instructions are optional but we make it required
-    fn instructions(&self) -> String;
+    // 获取路由器的 instructions
+    // 在协议中，instructions 是可选的，但我们使其成为必需的
+    fn instructions(&self) -> Option<String>;
+    // 获取路由器的 capabilities
     fn capabilities(&self) -> ServerCapabilities;
-    fn list_tools(&self) -> Vec<mcp_core::tool::Tool>;
+    // 列出路由器中的所有工具
+    fn list_tools(&self) -> impl Future<Output=Vec<mcp_core::tool::Tool>> + Send;
+    // 调用指定的工具
     fn call_tool(
         &self,
         tool_name: &str,
         arguments: Value,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<Content>, ToolError>> + Send + 'static>>;
-    fn list_resources(&self) -> Vec<mcp_core::resource::Resource>;
+    // 列出路由器中的所有资源
+    // fn list_resources(&self) -> Vec<mcp_core::resource::Resource>;
+    fn list_resources(&self) -> impl Future<Output = Vec<mcp_core::resource::Resource>> + Send;
+    // 读取指定的资源
     fn read_resource(
         &self,
         uri: &str,
-    ) -> Pin<Box<dyn Future<Output = Result<String, ResourceError>> + Send + 'static>>;
-    fn list_prompts(&self) -> Vec<Prompt>;
-    fn get_prompt(&self, prompt_name: &str) -> PromptFuture;
+    ) -> Pin<Box<dyn Future<Output = Result<String, ResourceError>> + Send>>;
+    // 列出路由器中的所有 Prompt
+    fn list_prompts(&self) -> impl Future<Output = Vec<Prompt>> + Send;
+    // 获取指定的 Prompt
+    fn get_prompt(&self, prompt_name: &str, params: &Value) -> impl Future<Output = Result<String, PromptError>> + Send;
 
     // Helper method to create base response
     fn create_response(&self, id: Option<u64>) -> JsonRpcResponse {
@@ -110,6 +124,7 @@ pub trait Router: Send + Sync + 'static {
         }
     }
 
+    // 处理 initialize 请求
     fn handle_initialize(
         &self,
         req: JsonRpcRequest,
@@ -122,7 +137,7 @@ pub trait Router: Send + Sync + 'static {
                     name: self.name(),
                     version: env!("CARGO_PKG_VERSION").to_string(),
                 },
-                instructions: Some(self.instructions()),
+                instructions: self.instructions(),
             };
 
             let mut response = self.create_response(req.id);
@@ -135,12 +150,13 @@ pub trait Router: Send + Sync + 'static {
         }
     }
 
+    // 处理 tools/list 请求
     fn handle_tools_list(
         &self,
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
-            let tools = self.list_tools();
+            let tools = self.list_tools().await;
 
             let result = ListToolsResult {
                 tools,
@@ -151,11 +167,12 @@ pub trait Router: Send + Sync + 'static {
                 Some(serde_json::to_value(result).map_err(|e| {
                     RouterError::Internal(format!("JSON serialization error: {}", e))
                 })?);
-
+    
             Ok(response)
         }
     }
 
+    // 处理 tools/call 请求
     fn handle_tools_call(
         &self,
         req: JsonRpcRequest,
@@ -193,12 +210,13 @@ pub trait Router: Send + Sync + 'static {
         }
     }
 
+    // 处理 resources/list 请求
     fn handle_resources_list(
         &self,
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
-            let resources = self.list_resources();
+            let resources = self.list_resources().await;
 
             let result = ListResourcesResult {
                 resources,
@@ -214,6 +232,7 @@ pub trait Router: Send + Sync + 'static {
         }
     }
 
+    // 处理 resources/read 请求
     fn handle_resources_read(
         &self,
         req: JsonRpcRequest,
@@ -248,12 +267,13 @@ pub trait Router: Send + Sync + 'static {
         }
     }
 
+    // 处理 prompts/list 请求
     fn handle_prompts_list(
         &self,
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
-            let prompts = self.list_prompts();
+            let prompts = self.list_prompts().await;
 
             let result = ListPromptsResult { prompts };
 
@@ -267,6 +287,7 @@ pub trait Router: Send + Sync + 'static {
         }
     }
 
+    // 处理 prompts/get 请求
     fn handle_prompts_get(
         &self,
         req: JsonRpcRequest,
@@ -291,7 +312,7 @@ pub trait Router: Send + Sync + 'static {
 
             // Fetch the prompt definition first
             let prompt = self
-                .list_prompts()
+                .list_prompts().await
                 .into_iter()
                 .find(|p| p.name == prompt_name)
                 .ok_or_else(|| {
@@ -319,7 +340,7 @@ pub trait Router: Send + Sync + 'static {
 
             // Now get the prompt content
             let description = self
-                .get_prompt(prompt_name)
+                .get_prompt(prompt_name, &params)
                 .await
                 .map_err(|e| RouterError::Internal(e.to_string()))?;
 
@@ -392,8 +413,10 @@ pub trait Router: Send + Sync + 'static {
     }
 }
 
+// 定义 RouterService 结构体
 pub struct RouterService<T>(pub T);
 
+// 为 RouterService 实现 Service trait
 impl<T> Service<JsonRpcRequest> for RouterService<T>
 where
     T: Router + Clone + Send + Sync + 'static,

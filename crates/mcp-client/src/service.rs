@@ -1,3 +1,7 @@
+//! MCP 服务实现。
+//!
+//! 该模块包含 MCP 服务的核心逻辑，用于处理 MCP 传输。
+
 use futures::future::BoxFuture;
 use mcp_core::protocol::JsonRpcMessage;
 use std::sync::Arc;
@@ -6,13 +10,14 @@ use tower::{timeout::Timeout, Service, ServiceBuilder};
 
 use crate::transport::{Error, TransportHandle};
 
-/// A wrapper service that implements Tower's Service trait for MCP transport
+/// 一个包装服务，为 MCP 传输实现 Tower 的 Service trait。
 #[derive(Clone)]
 pub struct McpService<T: TransportHandle> {
     inner: Arc<T>,
 }
 
 impl<T: TransportHandle> McpService<T> {
+    /// 创建一个新的 McpService。
     pub fn new(transport: T) -> Self {
         Self {
             inner: Arc::new(transport),
@@ -44,6 +49,7 @@ impl<T> McpService<T>
 where
     T: TransportHandle,
 {
+    /// 创建一个带有超时的新服务。
     pub fn with_timeout(transport: T, timeout: std::time::Duration) -> Timeout<McpService<T>> {
         ServiceBuilder::new()
             .timeout(timeout)
