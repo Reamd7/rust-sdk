@@ -3,11 +3,12 @@ use anyhow::Result;
 use mcp_server::router::RouterService;
 use mcp_server::{ByteTransport, Server};
 use tokio::io::{stdin, stdout};
-#[cfg(debug_assertions)]
+
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
-#[cfg(debug_assertions)]
+
 use tracing_subscriber::{self, EnvFilter};
 use std::env;
+use std::path::Path;
 use std::{future::Future, pin::Pin};
 
 use mcp_core::{
@@ -92,7 +93,7 @@ impl ApifoxMcpServerRouter {
         match resp  {
             Ok(resp) => {
                 if !resp.status().is_success() {
-                    #[cfg(debug_assertions)]
+                    
                     tracing::error!("Failed to fetch apifox openapi url: {}", url);
                     return Err(ToolError::NotFound(format!("Failed to fetch apifox openapi url: {}", url)));
                 }
@@ -100,12 +101,12 @@ impl ApifoxMcpServerRouter {
                 let body = resp.text().await;
                 match body  {
                     Ok(body) => {
-                        #[cfg(debug_assertions)]
+                        
                         tracing::info!("Successfully fetched apifox openapi url: {}", url);
                         return Ok(body)
                     }
                     Err(err) => {
-                        #[cfg(debug_assertions)]
+                        
                         tracing::error!("Failed to fetch body error: {}", err);
                         return Err(ToolError::NotFound(format!("Failed to fetch body error: ${err}")));
                     }
@@ -113,7 +114,7 @@ impl ApifoxMcpServerRouter {
                 
             },
             Err(_err) => {
-                #[cfg(debug_assertions)]
+                
                 tracing::error!("Failed to fetch apifox openapi url: {}", url);
                 return Err(ToolError::NotFound(format!("Failed to fetch apifox openapi url: ${url}")));
             }
@@ -235,6 +236,10 @@ async fn main() -> Result<()> {
         }
     };
     dotenv::dotenv().ok();
+    let current_path = env::current_exe().unwrap();
+    let current_dir = current_path.parent().unwrap();
+    // let current_path_str = current_dir.to_str().unwrap();
+
     let token = args.token.unwrap_or(env::var("APIFOX_USER_ACCESS_TOKEN").unwrap_or(String::from("")));
     if token.is_empty() {
         use clap::CommandFactory;
@@ -245,12 +250,14 @@ async fn main() -> Result<()> {
 
     // Set up file appender for logging
     // 设置文件追加器用于日志记录
-    #[cfg(debug_assertions)]
-    let file_appender = RollingFileAppender::new(Rotation::DAILY, "logs", "mcp-server.log");
+    
+    let file_appender = RollingFileAppender::new(Rotation::DAILY, 
+        Path::new(current_dir).join("logs"),
+        "mcp-server.log");
 
     // Initialize the tracing subscriber with file and stdout logging
     // 使用文件和标准输出日志记录初始化 tracing subscriber
-    #[cfg(debug_assertions)]
+    
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
         .with_writer(file_appender)
@@ -259,7 +266,7 @@ async fn main() -> Result<()> {
         .with_file(true)
         .with_line_number(true)
         .init();
-    #[cfg(debug_assertions)]
+    
     tracing::info!("Starting MCP server"); // 启动 MCP 服务器
 
     // Create an instance of our counter router
@@ -270,7 +277,7 @@ async fn main() -> Result<()> {
     // 创建并运行服务器
     let server = Server::new(router);
     let transport = ByteTransport::new(stdin(), stdout());
-    #[cfg(debug_assertions)]
+    
     tracing::info!("Server initialized and ready to handle requests"); // 服务器已初始化并准备好处理请求
     Ok(server.run(transport).await?)
 }
