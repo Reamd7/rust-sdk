@@ -4,7 +4,8 @@ members = [
     "examples/clients",
     "examples/servers",
     "examples/macros",
-    "examples/mcp-proxy"
+    "examples/mcp-proxy",
+    "examples/apifox-mcp",
 ]
 resolver = "2"
 
