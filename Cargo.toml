@@ -25,4 +25,4 @@ description = "Rust SDK for the Model Context Protocol"
 opt-level = 3 # 或 "z" 以进行大小优化（可能会影响运行时性能）
 lto = true      # 链接时优化（关键）
 codegen-units = 1 # 减少代码大小。可能会增加编译时间。
-panic = 'abort'   # 通过不包含panic处理来减少二进制大小
+# panic = 'abort'   # 通过不包含panic处理来减少二进制大小

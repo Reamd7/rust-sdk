@@ -9,3 +9,6 @@ cargo build --release --target x86_64-pc-windows-gnu
 交叉编译参考：
 
 https://tomshine.hashnode.dev/rust-macos-linux-windows
+
+查看二进制文件大小：
+cargo bloat --release --crates
