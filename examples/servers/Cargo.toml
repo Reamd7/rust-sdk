@@ -26,11 +26,6 @@ axum = { version = "0.8", features = ["macros"] }
 tokio-util = { version = "0.7", features = ["io", "codec"]}
 rand = { version = "0.8" }
 
-[dev-dependencies]
-axum = { version = "0.8", features = ["macros"] }
-tokio-util = { version = "0.7", features = ["io", "codec"]}
-rand = { version = "0.8" }
-
 [[example]]
 name = "counter-server"
 path = "src/counter_server.rs"

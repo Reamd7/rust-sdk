@@ -1,5 +1,5 @@
 use anyhow::Result;
-// use clap::{Parser, ValueHint};
+use clap::{Parser, ValueHint};
 use mcp_client::transport::sse::SseTransportHandle;
 use mcp_core::prompt::PromptMessageContent;
 use mcp_core::protocol::{InitializeResult, JsonRpcRequest, JsonRpcResponse};
@@ -7,7 +7,9 @@ use mcp_core::ResourceContents;
 use mcp_server::router::RouterService;
 use mcp_server::{ByteTransport, RouterError, Server};
 use tokio::io::{stdin, stdout};
+#[cfg(debug_assertions)]
 use tracing_appender::rolling::{RollingFileAppender, Rotation};
+#[cfg(debug_assertions)]
 use tracing_subscriber::{self, EnvFilter};
 
 use std::{future::Future, pin::Pin, sync::Arc};
@@ -56,6 +58,7 @@ impl SSEProxyRouter {
                 McpService::with_timeout(handle, Duration::from_secs(3))
             }.await)
         ));
+        #[cfg(debug_assertions)]
         tracing::info!("Client created\n");
 
         // 初始化
@@ -72,6 +75,7 @@ impl SSEProxyRouter {
         // 休眠 100 毫秒，以允许服务器启动 - 令人惊讶的是，这是必需的！
         tokio::time::sleep(Duration::from_millis(500)).await;
         
+        #[cfg(debug_assertions)]
         tracing::info!("server_info initialize, {:?}", server_info);
 
         Ok(
@@ -89,6 +93,7 @@ impl mcp_server::Router for SSEProxyRouter {
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
+            #[cfg(debug_assertions)]
             tracing::info!("handle_initialize, {:?}", self.server_info);
             
             let result = InitializeResult {
@@ -119,8 +124,11 @@ impl mcp_server::Router for SSEProxyRouter {
     fn capabilities(&self) -> ServerCapabilities {
         // 构建服务器能力
         // self.server_info.capabilities.clone()
+        #[cfg(debug_assertions)]
         tracing::info!("capabilities prompts, {:?}", self.server_info.capabilities.prompts);
+        #[cfg(debug_assertions)]
         tracing::info!("capabilities resources, {:?}", self.server_info.capabilities.resources);
+        #[cfg(debug_assertions)]
         tracing::info!("capabilities tools, {:?}", self.server_info.capabilities.tools);
 
         ServerCapabilities {
@@ -275,36 +283,37 @@ impl mcp_server::Router for SSEProxyRouter {
     }
 }
 
-// #[derive(Parser, Debug, Clone)]
-// #[command(author, version, about, long_about = None)]
-// struct Args {
-//     /// SSE MCP Server URL
-//     #[arg(short, long, value_hint=ValueHint::Url, required = true)]
-//     sse_url: String,
-// }
+#[derive(Parser, Debug, Clone)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// SSE MCP Server URL
+    #[arg(short, long, value_hint=ValueHint::Url, required = true)]
+    sse_url: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    // let args = match Args::try_parse() {
-    //     Ok(args) => args,
-    //     Err(_e) => {
-    //         use clap::CommandFactory;
-    //         let mut cmd = Args::command();
-    //         cmd.print_help()?;
-    //         std::process::exit(1);
-    //     }
-    // };
+    let args = match Args::try_parse() {
+        Ok(args) => args,
+        Err(_e) => {
+            use clap::CommandFactory;
+            let mut cmd = Args::command();
+            cmd.print_help()?;
+            std::process::exit(1);
+        }
+    };
 
-    // let url = args.sse_url;
-
-    let url = "http://localhost:4444/sse";
+    let url = args.sse_url;
+    // let url = url;
 
     // Set up file appender for logging
     // 设置文件追加器用于日志记录
+    #[cfg(debug_assertions)]
     let file_appender = RollingFileAppender::new(Rotation::DAILY, "/Users/gemini/Documents/code/rust-sdk/logs", "mcp-server.log");
 
     // Initialize the tracing subscriber with file and stdout logging
     // 使用文件和标准输出日志记录初始化 tracing subscriber
+    #[cfg(debug_assertions)]
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env().add_directive(tracing::Level::INFO.into()))
         .with_writer(file_appender)
@@ -314,8 +323,12 @@ async fn main() -> Result<()> {
         .with_line_number(true)
         .init();
 
-    tracing::info!("Starting MCP server"); // 启动 MCP 服务器
-
+    #[cfg(debug_assertions)]
+    tracing::info!("Starting MCP server, {:?}", url.to_string()); // 启动 MCP 服务器
+    
+    #[cfg(debug_assertions)]
+    tracing::info!("Starting MCP server, {:?}", url.to_string()); // 启动 MCP 服务器
+    
     let service_router: SSEProxyRouter = SSEProxyRouter::initialize(url.to_string()).await?;
 
     // Create an instance of our counter router
@@ -327,6 +340,7 @@ async fn main() -> Result<()> {
     let server = Server::new(router);
     let transport = ByteTransport::new(stdin(), stdout());
 
+    #[cfg(debug_assertions)]
     tracing::info!("Server initialized and ready to handle requests"); // 服务器已初始化并准备好处理请求
     Ok(server.run(transport).await?)
 }
