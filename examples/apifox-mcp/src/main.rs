@@ -21,16 +21,20 @@ use mcp_server::router::CapabilitiesBuilder;
 use serde_json::Value;
 use reqwest;
 use serde_json::json;
-use clap::{Parser, ValueHint};
+use clap::{Parser, ValueHint, command};
 
 static APIFOX_BASE_URL: &'static str = "https://api.apifox.com/api";
 
 #[derive(Parser, Debug, Clone)]
-#[command(author, version, about, long_about = None)]
+#[command(name = "ApifoxMcp")]
+#[command(author, about, long_about = None)]
 struct Args {
     /// Apifox AccessToken
     #[arg(short, long, value_hint=ValueHint::Unknown, required = false)]
     token: Option<String>,
+
+    #[arg(short = 'V', long, action = clap::ArgAction::SetTrue, help = "Show version information")]
+    version: bool,
 }
 
 #[derive(Clone)]
@@ -223,7 +227,6 @@ impl mcp_server::Router for ApifoxMcpServerRouter {
     }
 }
 
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = match Args::try_parse() {
@@ -235,18 +238,33 @@ async fn main() -> Result<()> {
             std::process::exit(1);
         }
     };
-    dotenv::dotenv().ok();
-    let current_path = env::current_exe().unwrap();
-    let current_dir = current_path.parent().unwrap();
-    // let current_path_str = current_dir.to_str().unwrap();
 
+    if args.version {
+        println!("0.1.0");
+        std::process::exit(0);
+    }
+
+    dotenv::dotenv().ok();
     let token = args.token.unwrap_or(env::var("APIFOX_USER_ACCESS_TOKEN").unwrap_or(String::from("")));
+
     if token.is_empty() {
         use clap::CommandFactory;
         let mut cmd = Args::command();
         cmd.print_help()?;
         std::process::exit(1);
     }
+
+    // -----------------------
+
+    let current_path = env::current_exe().unwrap();
+    let current_dir = current_path.parent().unwrap();
+    // let current_path_str = current_dir.to_str().unwrap();
+    // if token.is_empty() {
+        // use clap::CommandFactory;
+        // let mut cmd = Args::command();
+        // cmd.print_help()?;
+        // std::process::exit(1);
+    // }
 
     // Set up file appender for logging
     // 设置文件追加器用于日志记录
