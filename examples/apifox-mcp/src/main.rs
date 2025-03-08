@@ -165,6 +165,24 @@ impl mcp_server::Router for ApifoxMcpServerRouter {
                     "required": ["projectId", "endpointId"]
                 }),
             ),
+            Tool::new(
+                "通过链接获取接口的OAS 定义".to_string(), // 工具名称
+                "通过 Apifox 的协作链接来获取此接口的 OpenAPI Specification 格式定义，协作链接格式如下：https://app.apifox.com/link/project/{projectId}/apis/api-{endpointId} ，{projectId} 为 Apifox 的项目 ID，{endpointId} 为接口（Endpoint）的 ID，由于该链接是无法直接访问的，所以需要通过本工具来获取。如发现有符合条件的链接，则调用本工具".to_string(), // 工具描述
+                serde_json::json!({ // 工具参数
+                    "type": "object",
+                    "properties": {
+                        "projectId": {
+                            "type": "string",
+                            "description": "Apifox 的项目 ID"
+                        },
+                        "endpointId": {
+                            "type": "string",
+                            "description": "接口（Endpoint）的 ID"
+                        }
+                    },
+                    "required": ["projectId", "endpointId"]
+                }),
+            ),
         ]
     }
 
@@ -178,6 +196,7 @@ impl mcp_server::Router for ApifoxMcpServerRouter {
 
         Box::pin(async move {
             match tool_name.as_str() {
+                "通过链接获取接口的OAS 定义" |
                 "get_endpoint_oas_by_link" => { // 增加计数器
                     let param = arguments.as_object().unwrap();
                     let project_id = param.get("projectId").unwrap().as_str().unwrap();
