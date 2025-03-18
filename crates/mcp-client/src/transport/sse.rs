@@ -1,3 +1,7 @@
+//! MCP SSE 传输实现。
+//!
+//! 该模块包含 MCP SSE 传输的核心逻辑，用于处理基于 SSE 的通信。
+
 use crate::transport::{Error, PendingRequests, TransportMessage};
 use async_trait::async_trait;
 use eventsource_client::{Client, SSE};
@@ -33,6 +37,7 @@ pub struct SseActor {
 }
 
 impl SseActor {
+    /// Creates a new `SseActor`.
     pub fn new(
         receiver: mpsc::Receiver<TransportMessage>,
         pending_requests: Arc<PendingRequests>,
@@ -215,6 +220,7 @@ impl SseActor {
     }
 }
 
+/// SSE 传输句柄。
 #[derive(Clone)]
 pub struct SseTransportHandle {
     sender: mpsc::Sender<TransportMessage>,
@@ -222,11 +228,13 @@ pub struct SseTransportHandle {
 
 #[async_trait::async_trait]
 impl TransportHandle for SseTransportHandle {
+    /// 发送消息。
     async fn send(&self, message: JsonRpcMessage) -> Result<JsonRpcMessage, Error> {
         send_message(&self.sender, message).await
     }
 }
 
+/// SSE 传输。
 #[derive(Clone)]
 pub struct SseTransport {
     sse_url: String,
@@ -235,6 +243,7 @@ pub struct SseTransport {
 
 /// The SSE transport spawns an `SseActor` on `start()`.
 impl SseTransport {
+    /// 创建一个新的 `SseTransport`。
     pub fn new<S: Into<String>>(sse_url: S, env: HashMap<String, String>) -> Self {
         Self {
             sse_url: sse_url.into(),
@@ -266,10 +275,13 @@ impl SseTransport {
 impl Transport for SseTransport {
     type Handle = SseTransportHandle;
 
+    /// 启动传输。
     async fn start(&self) -> Result<Self::Handle, Error> {
         // Set environment variables
         for (key, value) in &self.env {
-            std::env::set_var(key, value);
+            unsafe {
+                std::env::set_var(key, value);
+            }
         }
 
         // Create a channel for outgoing TransportMessages
@@ -301,6 +313,7 @@ impl Transport for SseTransport {
         }
     }
 
+    /// 关闭传输。
     async fn close(&self) -> Result<(), Error> {
         // For SSE, you might close the stream or send a shutdown signal to the actor.
         // Here, we do nothing special.

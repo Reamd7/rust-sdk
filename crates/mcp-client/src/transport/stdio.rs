@@ -1,3 +1,7 @@
+//! MCP Stdio 传输实现。
+//!
+//! 该模块包含 MCP Stdio 传输的核心逻辑，用于处理基于 Stdio 的通信。
+
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
@@ -13,7 +17,9 @@ use super::{send_message, Error, PendingRequests, Transport, TransportHandle, Tr
 ///
 /// It uses channels for message passing and handles responses asynchronously through a background task.
 pub struct StdioActor {
+    /// Receives messages (requests/notifications) from the handle
     receiver: mpsc::Receiver<TransportMessage>,
+    /// Map of request-id -> oneshot sender
     pending_requests: Arc<PendingRequests>,
     _process: Child, // we store the process to keep it alive
     error_sender: mpsc::Sender<Error>,
@@ -23,6 +29,7 @@ pub struct StdioActor {
 }
 
 impl StdioActor {
+    /// 运行 StdioActor。
     pub async fn run(mut self) {
         use tokio::pin;
 
@@ -71,6 +78,7 @@ impl StdioActor {
         self.pending_requests.clear().await;
     }
 
+    /// 处理传入的消息。
     async fn handle_incoming_messages(stdout: ChildStdout, pending_requests: Arc<PendingRequests>) {
         let mut reader = BufReader::new(stdout);
         let mut line = String::new();
@@ -111,6 +119,7 @@ impl StdioActor {
         }
     }
 
+    /// 处理传出的消息。
     async fn handle_outgoing_messages(
         mut receiver: mpsc::Receiver<TransportMessage>,
         mut stdin: ChildStdin,
@@ -155,6 +164,7 @@ impl StdioActor {
     }
 }
 
+/// Stdio 传输句柄。
 #[derive(Clone)]
 pub struct StdioTransportHandle {
     sender: mpsc::Sender<TransportMessage>,
@@ -163,6 +173,7 @@ pub struct StdioTransportHandle {
 
 #[async_trait::async_trait]
 impl TransportHandle for StdioTransportHandle {
+    /// 发送消息。
     async fn send(&self, message: JsonRpcMessage) -> Result<JsonRpcMessage, Error> {
         let result = send_message(&self.sender, message).await;
         // Check for any pending errors even if send is successful
@@ -184,6 +195,7 @@ impl StdioTransportHandle {
     }
 }
 
+/// Stdio 传输。
 pub struct StdioTransport {
     command: String,
     args: Vec<String>,
@@ -191,6 +203,7 @@ pub struct StdioTransport {
 }
 
 impl StdioTransport {
+    /// 创建一个新的 `StdioTransport`。
     pub fn new<S: Into<String>>(
         command: S,
         args: Vec<String>,
@@ -203,6 +216,7 @@ impl StdioTransport {
         }
     }
 
+    /// 启动进程。
     async fn spawn_process(&self) -> Result<(Child, ChildStdin, ChildStdout, ChildStderr), Error> {
         let mut command = Command::new(&self.command);
         command
@@ -248,6 +262,7 @@ impl StdioTransport {
 impl Transport for StdioTransport {
     type Handle = StdioTransportHandle;
 
+    /// 启动传输。
     async fn start(&self) -> Result<Self::Handle, Error> {
         let (process, stdin, stdout, stderr) = self.spawn_process().await?;
         let (message_tx, message_rx) = mpsc::channel(32);
@@ -272,6 +287,7 @@ impl Transport for StdioTransport {
         Ok(handle)
     }
 
+    /// 关闭传输。
     async fn close(&self) -> Result<(), Error> {
         Ok(())
     }

@@ -1,11 +1,12 @@
 [package]
 name = "mcp-server-examples"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 publish = false
 
 [dependencies]
 mcp-server = { path = "../../crates/mcp-server" }
+mcp-client = { path = "../../crates/mcp-client" }
 mcp-core = { path = "../../crates/mcp-core" }
 mcp-macros = { path = "../../crates/mcp-macros" }
 tokio = { version = "1", features = ["io-util"] }
@@ -16,6 +17,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 tracing-appender = "0.2"
 futures = "0.3"
+clap = { version = "4.5.31", features = ["derive"] }
+tower = { version = "0.4", features = ["timeout", "util"] }
+tower-service = "0.3"
 
 [dev-dependencies]
 
@@ -41,3 +45,8 @@ path = "src/axum.rs"
 [[example]]
 name = "wasi_std_io"
 path = "src/wasi_std_io.rs"
+
+
+[[example]]
+name = "mcp-proxy"
+path = "src/mcp-proxy.rs"

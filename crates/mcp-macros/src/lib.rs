@@ -1,3 +1,4 @@
+// This file is modified by Cline.
 use convert_case::{Case, Casing};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};

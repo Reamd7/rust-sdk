@@ -1,0 +1,361 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'mcp_client'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=mcp-client"
+                ],
+                "filter": {
+                    "name": "mcp_client",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'mcp_core'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=mcp-core"
+                ],
+                "filter": {
+                    "name": "mcp_core",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'mcp_server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=mcp-server"
+                ],
+                "filter": {
+                    "name": "mcp_server",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'clients'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=clients",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "clients",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'clients'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=clients",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "clients",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'sse'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=sse",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "sse",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'sse'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=sse",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "sse",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'stdio'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=stdio",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "stdio",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'stdio'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=stdio",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "stdio",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'stdio_integration'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=stdio_integration",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "stdio_integration",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'stdio_integration'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=stdio_integration",
+                    "--package=mcp-client-examples"
+                ],
+                "filter": {
+                    "name": "stdio_integration",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'axum'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=axum",
+                    "--package=mcp-server-examples"
+                ],
+                "filter": {
+                    "name": "axum",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'axum'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=axum",
+                    "--package=mcp-server-examples"
+                ],
+                "filter": {
+                    "name": "axum",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'counter-server'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=counter-server",
+                    "--package=mcp-server-examples"
+                ],
+                "filter": {
+                    "name": "counter-server",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'counter-server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=counter-server",
+                    "--package=mcp-server-examples"
+                ],
+                "filter": {
+                    "name": "counter-server",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'mcp-proxy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=mcp-proxy",
+                    "--package=mcp-server-examples"
+                ],
+                "filter": {
+                    "name": "mcp-proxy",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'mcp-proxy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=mcp-proxy",
+                    "--package=mcp-server-examples"
+                ],
+                "filter": {
+                    "name": "mcp-proxy",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'calculator'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=calculator",
+                    "--package=mcp-macros-examples"
+                ],
+                "filter": {
+                    "name": "calculator",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'calculator'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=calculator",
+                    "--package=mcp-macros-examples"
+                ],
+                "filter": {
+                    "name": "calculator",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

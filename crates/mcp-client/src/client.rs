@@ -1,3 +1,7 @@
+//! MCP 客户端实现。
+//!
+//! 该模块包含 MCP 客户端的核心逻辑，用于与 MCP 服务器通信。
+
 use mcp_core::protocol::{
     CallToolResult, GetPromptResult, Implementation, InitializeResult, JsonRpcError,
     JsonRpcMessage, JsonRpcNotification, JsonRpcRequest, JsonRpcResponse, ListPromptsResult,
@@ -10,35 +14,45 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 use tower::{Service, ServiceExt}; // for Service::ready()
 
+/// 通用错误类型。
 pub type BoxError = Box<dyn std::error::Error + Sync + Send>;
 
-/// Error type for MCP client operations.
+/// MCP 客户端操作的错误类型。
 #[derive(Debug, Error)]
 pub enum Error {
+    /// 传输错误。
     #[error("Transport error: {0}")]
     Transport(#[from] super::transport::Error),
 
+    /// RPC 错误。
     #[error("RPC error: code={code}, message={message}")]
     RpcError { code: i32, message: String },
 
+    /// 序列化错误。
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
+    /// 从服务器收到意外响应。
     #[error("Unexpected response from server: {0}")]
     UnexpectedResponse(String),
 
+    /// 未初始化。
     #[error("Not initialized")]
     NotInitialized,
 
+    /// 超时或服务未准备好。
     #[error("Timeout or service not ready")]
     NotReady,
 
+    /// 请求超时。
     #[error("Request timed out")]
     Timeout(#[from] tower::timeout::error::Elapsed),
 
+    /// 来自 mcp-server 的错误。
     #[error("Error from mcp-server: {0}")]
     ServerBoxError(BoxError),
 
+    /// 调用 '{server}' 的 '{method}' 失败。
     #[error("Call to '{server}' failed for '{method}'. {source}")]
     McpServerError {
         method: String,
@@ -55,60 +69,86 @@ impl From<BoxError> for Error {
     }
 }
 
+/// 客户端信息。
 #[derive(Serialize, Deserialize)]
 pub struct ClientInfo {
+    /// 客户端名称。
     pub name: String,
+    /// 客户端版本。
     pub version: String,
 }
 
+/// 客户端能力。
 #[derive(Serialize, Deserialize, Default)]
 pub struct ClientCapabilities {
     // Add fields as needed. For now, empty capabilities are fine.
 }
 
+/// 初始化参数。
 #[derive(Serialize, Deserialize)]
 pub struct InitializeParams {
+    /// 协议版本。
     #[serde(rename = "protocolVersion")]
     pub protocol_version: String,
+    /// 客户端能力。
     pub capabilities: ClientCapabilities,
+    /// 客户端信息。
     #[serde(rename = "clientInfo")]
     pub client_info: ClientInfo,
 }
 
+/// MCP 客户端 trait。
 #[async_trait::async_trait]
 pub trait McpClientTrait: Send + Sync {
+    /// 初始化客户端。
     async fn initialize(
         &mut self,
         info: ClientInfo,
         capabilities: ClientCapabilities,
     ) -> Result<InitializeResult, Error>;
 
+    /// 列出资源。
     async fn list_resources(
         &self,
         next_cursor: Option<String>,
     ) -> Result<ListResourcesResult, Error>;
 
+    /// 读取资源。
     async fn read_resource(&self, uri: &str) -> Result<ReadResourceResult, Error>;
 
-    async fn list_tools(&self, next_cursor: Option<String>) -> Result<ListToolsResult, Error>;
+    /// 列出工具。
+    async fn list_tools(
+        &self,
+        next_cursor: Option<String>,
+    ) -> Result<ListToolsResult, Error>;
 
+    /// 调用工具。
     async fn call_tool(&self, name: &str, arguments: Value) -> Result<CallToolResult, Error>;
 
-    async fn list_prompts(&self, next_cursor: Option<String>) -> Result<ListPromptsResult, Error>;
+    /// 列出提示。
+    async fn list_prompts(
+        &self,
+        next_cursor: Option<String>,
+    ) -> Result<ListPromptsResult, Error>;
 
+    /// 获取提示。
     async fn get_prompt(&self, name: &str, arguments: Value) -> Result<GetPromptResult, Error>;
 }
 
-/// The MCP client is the interface for MCP operations.
+/// MCP 客户端是 MCP 操作的接口。
 pub struct McpClient<S>
 where
     S: Service<JsonRpcMessage, Response = JsonRpcMessage> + Clone + Send + Sync + 'static,
     S::Error: Into<Error>,
     S::Future: Send,
 {
+    /// 服务。
     service: Mutex<S>,
+    /// 下一个 ID。
     next_id: AtomicU64,
+    /// 服务器能力。
     server_capabilities: Option<ServerCapabilities>,
+    /// 服务器信息。
     server_info: Option<Implementation>,
 }
 
@@ -118,6 +158,7 @@ where
     S::Error: Into<Error>,
     S::Future: Send,
 {
+    /// 创建一个新的 MCP 客户端。
     pub fn new(service: S) -> Self {
         Self {
             service: Mutex::new(service),
@@ -127,7 +168,7 @@ where
         }
     }
 
-    /// Send a JSON-RPC request and check we don't get an error response.
+    /// 发送 JSON-RPC 请求并检查我们没有收到错误响应。
     async fn send_request<R>(&self, method: &str, params: Value) -> Result<R, Error>
     where
         R: for<'de> Deserialize<'de>,
@@ -198,7 +239,7 @@ where
         }
     }
 
-    /// Send a JSON-RPC notification.
+    /// 发送 JSON-RPC 通知。
     async fn send_notification(&self, method: &str, params: Value) -> Result<(), Error> {
         let mut service = self.service.lock().await;
         service.ready().await.map_err(|_| Error::NotReady)?;
@@ -226,7 +267,7 @@ where
         Ok(())
     }
 
-    // Check if the client has completed initialization
+    /// 检查客户端是否已完成初始化。
     fn completed_initialization(&self) -> bool {
         self.server_capabilities.is_some()
     }
@@ -239,6 +280,7 @@ where
     S::Error: Into<Error>,
     S::Future: Send,
 {
+    /// 初始化客户端。
     async fn initialize(
         &mut self,
         info: ClientInfo,
@@ -263,6 +305,7 @@ where
         Ok(result)
     }
 
+    /// 列出资源。
     async fn list_resources(
         &self,
         next_cursor: Option<String>,
@@ -291,6 +334,7 @@ where
         self.send_request("resources/list", payload).await
     }
 
+    /// 读取资源。
     async fn read_resource(&self, uri: &str) -> Result<ReadResourceResult, Error> {
         if !self.completed_initialization() {
             return Err(Error::NotInitialized);
@@ -313,7 +357,11 @@ where
         self.send_request("resources/read", params).await
     }
 
-    async fn list_tools(&self, next_cursor: Option<String>) -> Result<ListToolsResult, Error> {
+    /// 列出工具。
+    async fn list_tools(
+        &self,
+        next_cursor: Option<String>,
+    ) -> Result<ListToolsResult, Error> {
         if !self.completed_initialization() {
             return Err(Error::NotInitialized);
         }
@@ -332,6 +380,7 @@ where
         self.send_request("tools/list", payload).await
     }
 
+    /// 调用工具。
     async fn call_tool(&self, name: &str, arguments: Value) -> Result<CallToolResult, Error> {
         if !self.completed_initialization() {
             return Err(Error::NotInitialized);
@@ -351,7 +400,11 @@ where
         self.send_request("tools/call", params).await
     }
 
-    async fn list_prompts(&self, next_cursor: Option<String>) -> Result<ListPromptsResult, Error> {
+    /// 列出提示。
+    async fn list_prompts(
+        &self,
+        next_cursor: Option<String>,
+    ) -> Result<ListPromptsResult, Error> {
         if !self.completed_initialization() {
             return Err(Error::NotInitialized);
         }
@@ -371,6 +424,7 @@ where
         self.send_request("prompts/list", payload).await
     }
 
+    /// 获取提示。
     async fn get_prompt(&self, name: &str, arguments: Value) -> Result<GetPromptResult, Error> {
         if !self.completed_initialization() {
             return Err(Error::NotInitialized);

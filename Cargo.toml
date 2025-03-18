@@ -3,7 +3,9 @@ members = [
     "crates/*",
     "examples/clients",
     "examples/servers",
-    "examples/macros"
+    "examples/macros",
+    "examples/mcp-proxy",
+    "examples/apifox-mcp",
 ]
 resolver = "2"
 
@@ -12,9 +14,15 @@ mcp-core = { path = "./crates/mcp-core" }
 mcp-macros = { path = "./crates/mcp-macros" }
 
 [workspace.package]
-edition = "2021"
+edition = "2024"
 version = "1.0.7"
 authors = ["Block <ai-oss-tools@block.xyz>"]
 license = "MIT"
 repository = "https://github.com/modelcontextprotocol/rust-sdk/"
 description = "Rust SDK for the Model Context Protocol"
+
+[profile.release]
+opt-level = 3 # 或 "z" 以进行大小优化（可能会影响运行时性能）
+lto = true      # 链接时优化（关键）
+codegen-units = 1 # 减少代码大小。可能会增加编译时间。
+# panic = 'abort'   # 通过不包含panic处理来减少二进制大小
