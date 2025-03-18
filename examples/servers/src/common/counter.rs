@@ -49,8 +49,8 @@ impl mcp_server::Router for CounterRouter {
         "counter".to_string()
     }
 
-    fn instructions(&self) -> String {
-        "This server provides a counter tool that can increment and decrement values. The counter starts at 0 and can be modified using the 'increment' and 'decrement' tools. Use 'get_value' to check the current count.".to_string()
+    fn instructions(&self) -> Option<String> {
+        Some("This server provides a counter tool that can increment and decrement values. The counter starts at 0 and can be modified using the 'increment' and 'decrement' tools. Use 'get_value' to check the current count.".to_string())
     }
 
     fn capabilities(&self) -> ServerCapabilities {
@@ -61,36 +61,38 @@ impl mcp_server::Router for CounterRouter {
             .build()
     }
 
-    fn list_tools(&self) -> Vec<Tool> {
-        vec![
-            Tool::new(
-                "increment".to_string(),
-                "Increment the counter by 1".to_string(),
-                serde_json::json!({
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }),
-            ),
-            Tool::new(
-                "decrement".to_string(),
-                "Decrement the counter by 1".to_string(),
-                serde_json::json!({
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }),
-            ),
-            Tool::new(
-                "get_value".to_string(),
-                "Get the current counter value".to_string(),
-                serde_json::json!({
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }),
-            ),
-        ]
+    fn list_tools(&self) -> impl Future<Output = Vec<Tool>> + Send {
+        async move {
+            vec![
+                Tool::new(
+                    "increment".to_string(),
+                    "Increment the counter by 1".to_string(),
+                    serde_json::json!({
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }),
+                ),
+                Tool::new(
+                    "decrement".to_string(),
+                    "Decrement the counter by 1".to_string(),
+                    serde_json::json!({
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }),
+                ),
+                Tool::new(
+                    "get_value".to_string(),
+                    "Get the current counter value".to_string(),
+                    serde_json::json!({
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }),
+                ),
+            ]
+        }
     }
 
     fn call_tool(
@@ -120,11 +122,13 @@ impl mcp_server::Router for CounterRouter {
         })
     }
 
-    fn list_resources(&self) -> Vec<Resource> {
-        vec![
-            self._create_resource_text("str:////Users/to/some/path/", "cwd"),
-            self._create_resource_text("memo://insights", "memo-name"),
-        ]
+    fn list_resources(&self) -> impl Future<Output = Vec<Resource>> + Send {
+        async move {
+            vec![
+                self._create_resource_text("str:////Users/to/some/path/", "cwd"),
+                self._create_resource_text("memo://insights", "memo-name"),
+            ]
+        }
     }
 
     fn read_resource(
@@ -151,21 +155,24 @@ impl mcp_server::Router for CounterRouter {
         })
     }
 
-    fn list_prompts(&self) -> Vec<Prompt> {
-        vec![Prompt::new(
-            "example_prompt",
-            Some("This is an example prompt that takes one required agrument, message"),
-            Some(vec![PromptArgument {
-                name: "message".to_string(),
-                description: Some("A message to put in the prompt".to_string()),
-                required: Some(true),
-            }]),
-        )]
+    fn list_prompts(&self) -> impl Future<Output = Vec<Prompt>> + Send {
+        async move {
+            vec![Prompt::new(
+                "example_prompt",
+                Some("This is an example prompt that takes one required argument, message"),
+                Some(vec![PromptArgument {
+                    name: "message".to_string(),
+                    description: Some("A message to put in the prompt".to_string()),
+                    required: Some(true),
+                }]),
+            )]
+        }
     }
 
     fn get_prompt(
         &self,
         prompt_name: &str,
+        _params: &Value,
     ) -> Pin<Box<dyn Future<Output = Result<String, PromptError>> + Send + 'static>> {
         let prompt_name = prompt_name.to_string();
         Box::pin(async move {

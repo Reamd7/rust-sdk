@@ -4,8 +4,6 @@ use std::{
     task::{Context, Poll},
 };
 
-type PromptFuture = Pin<Box<dyn Future<Output = Result<String, PromptError>> + Send + 'static>>;
-
 use mcp_core::{
     content::Content,
     handler::{PromptError, ResourceError, ToolError},
@@ -83,22 +81,22 @@ impl CapabilitiesBuilder {
 
 pub trait Router: Send + Sync + 'static {
     fn name(&self) -> String;
-    // in the protocol, instructions are optional but we make it required
-    fn instructions(&self) -> String;
+    // in the protocol, instructions are optional
+    fn instructions(&self) -> Option<String>;
     fn capabilities(&self) -> ServerCapabilities;
-    fn list_tools(&self) -> Vec<mcp_core::tool::Tool>;
+    fn list_tools(&self) -> impl Future<Output = Vec<mcp_core::tool::Tool>> + Send;
     fn call_tool(
         &self,
         tool_name: &str,
         arguments: Value,
     ) -> Pin<Box<dyn Future<Output = Result<Vec<Content>, ToolError>> + Send + 'static>>;
-    fn list_resources(&self) -> Vec<mcp_core::resource::Resource>;
+    fn list_resources(&self) -> impl Future<Output = Vec<mcp_core::resource::Resource>> + Send;
     fn read_resource(
         &self,
         uri: &str,
     ) -> Pin<Box<dyn Future<Output = Result<String, ResourceError>> + Send + 'static>>;
-    fn list_prompts(&self) -> Vec<Prompt>;
-    fn get_prompt(&self, prompt_name: &str) -> PromptFuture;
+    fn list_prompts(&self) -> impl Future<Output = Vec<Prompt>> + Send;
+    fn get_prompt(&self, prompt_name: &str, params: &Value) -> Pin<Box<dyn Future<Output = Result<String, PromptError>> + Send + 'static>>;
 
     // Helper method to create base response
     fn create_response(&self, id: Option<u64>) -> JsonRpcResponse {
@@ -122,7 +120,7 @@ pub trait Router: Send + Sync + 'static {
                     name: self.name(),
                     version: env!("CARGO_PKG_VERSION").to_string(),
                 },
-                instructions: Some(self.instructions()),
+                instructions: self.instructions(),
             };
 
             let mut response = self.create_response(req.id);
@@ -140,7 +138,7 @@ pub trait Router: Send + Sync + 'static {
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
-            let tools = self.list_tools();
+            let tools = self.list_tools().await;
 
             let result = ListToolsResult {
                 tools,
@@ -198,7 +196,7 @@ pub trait Router: Send + Sync + 'static {
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
-            let resources = self.list_resources();
+            let resources = self.list_resources().await;
 
             let result = ListResourcesResult {
                 resources,
@@ -253,7 +251,7 @@ pub trait Router: Send + Sync + 'static {
         req: JsonRpcRequest,
     ) -> impl Future<Output = Result<JsonRpcResponse, RouterError>> + Send {
         async move {
-            let prompts = self.list_prompts();
+            let prompts = self.list_prompts().await;
 
             let result = ListPromptsResult { prompts };
 
@@ -292,6 +290,7 @@ pub trait Router: Send + Sync + 'static {
             // Fetch the prompt definition first
             let prompt = self
                 .list_prompts()
+                .await
                 .into_iter()
                 .find(|p| p.name == prompt_name)
                 .ok_or_else(|| {
@@ -319,7 +318,7 @@ pub trait Router: Send + Sync + 'static {
 
             // Now get the prompt content
             let description = self
-                .get_prompt(prompt_name)
+                .get_prompt(prompt_name, &params)
                 .await
                 .map_err(|e| RouterError::Internal(e.to_string()))?;
 
